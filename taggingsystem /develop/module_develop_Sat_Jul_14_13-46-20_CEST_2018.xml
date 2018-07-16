@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="module_develop" default="compile.module.develop">
+  <dirname property="module.develop.basedir" file="${ant.file.module_develop}"/>
+  
+  <property name="module.jdk.home.develop" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.develop" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.develop" value="${project.jdk.classpath}"/>
+  
+  <property name="compiler.args.develop" value="-encoding UTF-8 -source 1.8 -target 1.8 ${compiler.args}"/>
+  
+  <property name="develop.output.dir" value="${module.develop.basedir}/../out/production/develop"/>
+  <property name="develop.testoutput.dir" value="${module.develop.basedir}/../out/test/develop"/>
+  
+  <path id="develop.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="develop.module.production.classpath">
+    <path refid="${module.jdk.classpath.develop}"/>
+    <path refid="library.lib1.classpath"/>
+    <path refid="library.lib.classpath"/>
+    <path refid="library.cbs.classpath"/>
+  </path>
+  
+  <path id="develop.runtime.production.module.classpath">
+    <pathelement location="${develop.output.dir}"/>
+    <path refid="library.lib1.classpath"/>
+    <path refid="library.lib.classpath"/>
+    <path refid="library.cbs.classpath"/>
+  </path>
+  
+  <path id="develop.module.classpath">
+    <path refid="${module.jdk.classpath.develop}"/>
+    <pathelement location="${develop.output.dir}"/>
+    <path refid="library.lib1.classpath"/>
+    <path refid="library.lib.classpath"/>
+    <path refid="library.cbs.classpath"/>
+  </path>
+  
+  <path id="develop.runtime.module.classpath">
+    <pathelement location="${develop.testoutput.dir}"/>
+    <pathelement location="${develop.output.dir}"/>
+    <path refid="library.lib1.classpath"/>
+    <path refid="library.lib.classpath"/>
+    <path refid="library.cbs.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.develop">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.develop">
+    <patternset refid="excluded.from.module.develop"/>
+  </patternset>
+  
+  <path id="develop.module.sourcepath">
+    <dirset dir="${module.develop.basedir}">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.develop" depends="compile.module.develop.production,compile.module.develop.tests" description="Compile module develop"/>
+  
+  <target name="compile.module.develop.production" depends="register.custom.compilers" description="Compile module develop; production classes">
+    <mkdir dir="${develop.output.dir}"/>
+    <javac2 destdir="${develop.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.develop}/javac">
+      <compilerarg line="${compiler.args.develop}"/>
+      <bootclasspath refid="develop.module.bootclasspath"/>
+      <classpath refid="develop.module.production.classpath"/>
+      <src refid="develop.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.develop"/>
+    </javac2>
+    
+    <copy todir="${develop.output.dir}">
+      <fileset dir="${module.develop.basedir}/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.develop.tests" depends="register.custom.compilers,compile.module.develop.production" description="compile module develop; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.develop" description="cleanup module">
+    <delete dir="${develop.output.dir}"/>
+    <delete dir="${develop.testoutput.dir}"/>
+  </target>
+</project>
