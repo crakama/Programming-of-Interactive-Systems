@@ -57,7 +57,6 @@ been maintained for some time.
 			  The TAG assignment
 
 The challenge is to create the Game of Tag for mobile software agents.
-
 The game of tag is a child's game, played minimally by two players. It
 is very simple. One player is choosen to be 'it'. That player's task
 is to run up to one of the other players and touch him or her, saying

@@ -1,2 +1,2 @@
-Main-Class: dsv.pis.gotag.dexter.Dexter
+Main-Class: dsv.pis.gotag.bailiff.Dexter
 Class-Path: util.jar Bailiff-dl.jar jini-core.jar jini-ext.jar reggie-dl.jar

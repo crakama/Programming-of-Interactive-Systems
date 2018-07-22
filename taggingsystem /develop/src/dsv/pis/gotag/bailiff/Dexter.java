@@ -7,22 +7,18 @@
 // 2000-12-18/FK Runs for the first time.
 // 2000-12-13/FK
 
-package dsv.pis.gotag.dexter;
+package dsv.pis.gotag.bailiff;
 
 import java.io.*;
 import java.lang.*;
 import java.util.Random;
 
-import java.awt.*;
-import java.awt.event.*;
 import java.util.UUID;
-import javax.swing.*;
 
 import net.jini.core.lookup.*;
 import net.jini.lookup.*;
 
 import dsv.pis.gotag.util.*;
-import dsv.pis.gotag.bailiff.BailiffInterface;
 
 /**
  * Dexter jumps around randomly among the Bailiffs. He is can be used
@@ -120,23 +116,7 @@ public class Dexter implements Serializable
         // the Jini lookup service.
         SDM = new ServiceDiscoveryManager (null, null);
 
-        DexterFace dexFace = null;
-        JFrame f = null;
 
-        if (!noFace) {
-            // Create a small GUI for this Dexter instance.
-            f = new JFrame ("Dexter");
-            f.addWindowListener (new WindowAdapter () {
-                public void windowClosing (WindowEvent e) {System.exit (0);}
-            });
-            dexFace = new DexterFace ();
-            f.getContentPane ().add ("Center", dexFace);
-            dexFace.init ();
-            f.pack ();
-            f.setSize (new Dimension (256, 192));
-            f.setVisible (true);
-            dexFace.startAnimation ();
-        }
 
         for (;;) {
 
@@ -229,7 +209,25 @@ public class Dexter implements Serializable
                 }
                 else {
 
+      //              DexterFace dexFace = null;
+  //                  JFrame f = null;
 
+//                    if (!noFace) {
+//                        // Create a small GUI for this Dexter instance.
+//                        f = new JFrame ("Dexter");
+//                        f.addWindowListener (new WindowAdapter () {
+//                            public void windowClosing (WindowEvent e) {System.exit (0);}
+//                        });
+//
+//                        dexFace = new DexterFace ();
+//
+//                        f.getContentPane ().add ("Center", dexFace);
+//                        dexFace.init ();
+//                        f.pack ();
+//                        f.setSize (new Dimension (256, 192));
+//                        f.setVisible (true);
+//                        dexFace.startAnimation ();
+//                    }
 
                     // This is the spot where Dexter tries to migrate.
 
@@ -238,10 +236,10 @@ public class Dexter implements Serializable
                         debugMsg ("Agent :" +agentID +": is trying to jump...");
                         bfi.migrate (this, "topLevel", new Object [] {agentID});
                         SDM.terminate ();	// SUCCESS
-                        if (!noFace) {
-                            dexFace.stopAnimation ();
-                            f.setVisible (false);
-                        }
+                        //if (!noFace) {
+                       //     dexFace.stopAnimation ();
+                       //     f.setVisible (false);
+                        //}
                         return;		// SUCCESS
                     }
                     catch (java.rmi.RemoteException e) { // FAILURE

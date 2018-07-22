@@ -2,7 +2,7 @@
 // Fredrik Kilander, DSV
 // 2001-02-01/FK
 
-package dsv.pis.gotag.dexter;
+package dsv.pis.gotag.bailiff;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -12,8 +12,7 @@ import javax.swing.*;
 /**
  * A graphical representation of the Dexter agent.
  */
-public class DexterFace extends JApplet implements ActionListener
-{
+public class DexterFace extends JApplet implements ActionListener {
   final static Color bg    = Color.white;
   final static Color fg    = Color.black;
   final static Color red   = Color.red;

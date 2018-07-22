@@ -7,26 +7,18 @@
 package dsv.pis.gotag.bailiff;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.lang.*;
 import java.io.*;
 import java.net.*;
 import java.rmi.*;
-import java.rmi.server.*;
 import java.util.*;
 
 import net.jini.core.entry.*;
 import net.jini.core.lookup.*;
-import net.jini.core.discovery.*;
-import net.jini.lease.*;
 import net.jini.lookup.*;
 import net.jini.lookup.entry.*;
 
 import dsv.pis.gotag.util.*;
-
-import javax.swing.*;
-import javax.swing.Timer;
 
 /**
  * The Bailiff is a Jini service that provides an execution environment
@@ -56,7 +48,7 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
     protected Map propertyMap;
     protected JoinManager bf_joinmanager;
     protected InetAddress myInetAddress;
-
+    protected static BailiffFrame bff;
     protected void debugMsg (String s) {
         if (debug) {
             System.out.println (s);
@@ -139,7 +131,8 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
         protected Object [] myArgs;	// Arguments to the entry point method
         protected java.lang.reflect.Method myMethod; // Ref. to entry point method
         protected Class [] myParms; // Class reflection of arguments
-
+        protected BailiffFrame bailiffFrame;
+        protected DexterFace dexFace = null;
         /**
          * Creates a new agitator by copying th references to the client
          * object, the name of the entry method and the arguments to
@@ -147,11 +140,14 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
          * @param obj The client object, holding the method to execute
          * @param cb  The name of the entry point method (callback)
          * @param args Arguments to the entry point method
+         * @parambff
          */
-        public agitator (Object obj, String cb, Object [] args) {
+        public agitator(Object obj, String cb, Object[] args, BailiffFrame bailiffF) {
             myObj = obj;
             myCb = cb;
             myArgs = args;
+            bailiffFrame = bailiffF;
+
 
             // If the array of arguments are non-zero we must create an array
             // of Class so that we can match the entry point method's name with
@@ -191,6 +187,14 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
                     propertyMap.put(myArgs[0],myObj);
                     debugMsg("Migration "+ propertyMap.get(myArgs[0]).toString()+"New Agent arrived at \n");
                     debugMsg(ping());
+                    debugMsg("Migration ");
+                    dexFace = new DexterFace();
+                    bailiffFrame.getContentPane ().add ("Center", dexFace);
+                    dexFace.init ();
+                    bailiffFrame.pack ();
+                    bailiffFrame.setSize (new Dimension (256, 192));
+                    bailiffFrame.setVisible (true);
+                    dexFace.startAnimation ();
                 }
 
             }
@@ -275,9 +279,8 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
     public void migrate (Object obj, String cb, Object [] args) throws java.rmi.RemoteException,
             java.lang.NoSuchMethodException {
         if (debug) {
-            log.entry ("<migrate obj=\"" + obj + "\" cb=\"" + cb
-                    + "\" args=\"" + args + "\"/>"); }
-        agitator agt = new agitator (obj, cb, args);
+            log.entry ("<migrate obj=\"" + obj + "\" cb=\"" + cb + "\" args=\"" + args + "\"/>"); }
+        agitator agt = new agitator (obj, cb, args,bff);
         agt.initialize ();
         agt.start ();
         //TODO: The agent should be added to the map when agitator starts
@@ -459,9 +462,7 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
         Bailiff bf = new Bailiff (room, user, debug, log);
         if (noFrameOption.getIsSet () == false) {
 
-            JApplet applet = new BailiffApplet();
-            applet.init();
-            BailiffFrame bff = new BailiffFrame (bf,applet);
+            bff = new BailiffFrame (bf);
 
             //JFrame frame = new JFrame("Applet in Frame");
 
@@ -471,60 +472,10 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
             //frame.setLocationRelativeTo( null );
             //frame.setVisible( true );
 
-            applet.start();
 
         }
     } // main
 
-    static class BailiffApplet extends JApplet {
-        Timer timer;
-        public void init(){
-            try
-            {
-                SwingUtilities.invokeAndWait(new Runnable() {
-                    public void run()
-                    {
-                        createGUI();
-                    }
-                });
-            }
-            catch (Exception e)
-            {
-                System.err.println("createGUI didn't successfully complete: " + e);
-            }
-            ActionListener actionDisplayAgent = new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent actionEvent) {
-                    //TODO: Add update methods here e.g update UI on newly migrated agents.
-
-                    repaint();
-
-                }
-            };
-
-            timer = new Timer(30,actionDisplayAgent);
-            timer.start();
-
-        }
-        /**
-         * Create the GUI for Applet. For thread safety, this method should
-         * be invoked from the event-dispatching thread.
-         */
-        private void createGUI() {
-            //TODO:
-            JLabel appletLabel = new JLabel( "I'm a Swing Applet" );
-            appletLabel.setHorizontalAlignment( JLabel.CENTER );
-            appletLabel.setFont(new Font("Serif", Font.PLAIN, 36));
-            add( appletLabel );
-            setSize(400, 200);
-        }
-
-        public void paint(Graphics graphics){
-            graphics.drawString(" Agent Name",120,60);
-
-        }
-
-    }
 
 } // public class Bailiff
 
