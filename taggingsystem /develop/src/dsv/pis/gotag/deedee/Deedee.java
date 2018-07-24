@@ -9,7 +9,6 @@ package dsv.pis.gotag.deedee;
 
 import java.io.*;
 import java.lang.*;
-import java.util.Random;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -20,7 +19,6 @@ import net.jini.core.entry.*;
 import net.jini.lookup.*;
 import net.jini.lookup.entry.*;
 
-import dsv.pis.gotag.util.*;
 import dsv.pis.gotag.bailiff.BailiffInterface;
 
 /**
@@ -70,7 +68,7 @@ public class Deedee implements Serializable {
   /**
    * Creates a new Deedee.
    * @param targetUser The recipient's (system-local user-) name.
-   * @param mesg The message text.
+   * @parammesg The message text.
    * @param expires The Java system expiration time of the message.
    */
   public Deedee (String targetUser, String msg, long expires)
@@ -189,7 +187,8 @@ public class Deedee implements Serializable {
 	  BailiffInterface bfi = (BailiffInterface) svcItem.service;
 	  dgui.showPrepareJump ();
 	  try {
-	    bfi.migrate (this, "topLevel", new Object [] {});
+	   // bfi.migrate (this, "topLevel", new Object [] {});
+          bfi.migrate (this, "topLevel", new Object [] {});
 	    dgui.showGone ();
 	    runFlop = false;
 	  }

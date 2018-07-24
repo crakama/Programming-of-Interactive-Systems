@@ -6,19 +6,26 @@
 
 package dsv.pis.gotag.bailiff;
 
-import java.awt.*;
-import java.lang.*;
-import java.io.*;
-import java.net.*;
-import java.rmi.*;
-import java.util.*;
+import dsv.pis.gotag.util.CmdlnOption;
+import dsv.pis.gotag.util.Commandline;
+import dsv.pis.gotag.util.Logger;
+import net.jini.core.entry.Entry;
+import net.jini.core.lookup.ServiceID;
+import net.jini.lookup.JoinManager;
+import net.jini.lookup.ServiceIDListener;
+import net.jini.lookup.entry.Location;
+import net.jini.lookup.entry.Name;
 
-import net.jini.core.entry.*;
-import net.jini.core.lookup.*;
-import net.jini.lookup.*;
-import net.jini.lookup.entry.*;
-
-import dsv.pis.gotag.util.*;
+import javax.swing.*;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.rmi.RMISecurityManager;
+import java.rmi.RemoteException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The Bailiff is a Jini service that provides an execution environment
@@ -46,9 +53,15 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
     protected String room;
     protected String host;
     protected Map propertyMap;
+    protected DexterFace dexterFace = null;
+    //protected Map dexMap = Collections.synchronizedMap (new HashMap ());
+
+   protected Map<String,Thread> mp = new HashMap<String,Thread>();
+   protected Map<String, Thread> agents = Collections.synchronizedMap(mp);
+   Map<String,DexterFace> dexMap = new ConcurrentHashMap<String,DexterFace>();
     protected JoinManager bf_joinmanager;
     protected InetAddress myInetAddress;
-    protected static BailiffFrame bff;
+    static JFrame bff;
     protected void debugMsg (String s) {
         if (debug) {
             System.out.println (s);
@@ -132,22 +145,25 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
         protected java.lang.reflect.Method myMethod; // Ref. to entry point method
         protected Class [] myParms; // Class reflection of arguments
         protected BailiffFrame bailiffFrame;
-        protected DexterFace dexFace = null;
+        protected DexterFace dexFace;
+        protected String agentID;
         /**
          * Creates a new agitator by copying th references to the client
          * object, the name of the entry method and the arguments to
          * the entry method.
          * @param obj The client object, holding the method to execute
          * @param cb  The name of the entry point method (callback)
-         * @param args Arguments to the entry point method
+         * @param args Arguments to the entry point method(Agent ID and JFrame)
+         * @paramdexFace
          * @parambff
          */
-        public agitator(Object obj, String cb, Object[] args, BailiffFrame bailiffF) {
+        public agitator(Object obj, String cb, Object[] args) {
             myObj = obj;
             myCb = cb;
             myArgs = args;
-            bailiffFrame = bailiffF;
-
+            //bailiffFrame = (BailiffFrame) args[1];
+            //dexFace = dexF;
+            agentID = args[0].toString();
 
             // If the array of arguments are non-zero we must create an array
             // of Class so that we can match the entry point method's name with
@@ -178,33 +194,35 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
         /**
          * Overrides the default run() method in class Thread (a superclass to
          * us). Then we invoke the requested entry point on the client object.
+         * @myArgs contains two parameters, JFrame and Agent ID
          */
         public void run () {
             try {
                // TODO Add agent unique ID to Map
                 if(myArgs.length > 0){
+                    debugMsg(" RUN method" + agentID);
                     myMethod.invoke (myObj, myArgs);
-                    propertyMap.put(myArgs[0],myObj);
                     debugMsg("Migration "+ propertyMap.get(myArgs[0]).toString()+"New Agent arrived at \n");
                     debugMsg(ping());
-                    debugMsg("Migration ");
-                    dexFace = new DexterFace();
-                    bailiffFrame.getContentPane ().add ("Center", dexFace);
-                    dexFace.init ();
-                    bailiffFrame.pack ();
-                    bailiffFrame.setSize (new Dimension (256, 192));
-                    bailiffFrame.setVisible (true);
-                    dexFace.startAnimation ();
-                }
+                    debugMsg("agentID at RUN " + agentID);
+                                    }
 
             }
             catch (Throwable t) {
                 if (debug) {
                     log.entry (t);
                 }
+            }finally {
+                // Close the connection
+//                if(isAlive()){
+//                    debugMsg(" Thread is still alive");
+//                    dexFace.stopAnimation();
+//                }
             }
         }
+
     } // class agitator
+
 
 
     // In BailiffInterface:
@@ -273,18 +291,33 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
      * @param cb  The name of the entry (callback) method to call.
      * @param args Array of arguments to the entry method. The elements in
      * the array must match the entry method's signature.
+     * @paramagentID
      * @throws NoSuchMethodException Thrown if the specified entry method
      * does not exist with the expected signature.
      */
-    public void migrate (Object obj, String cb, Object [] args) throws java.rmi.RemoteException,
+    public void migrate(Object obj, String cb, Object[] args) throws java.rmi.RemoteException,
             java.lang.NoSuchMethodException {
         if (debug) {
             log.entry ("<migrate obj=\"" + obj + "\" cb=\"" + cb + "\" args=\"" + args + "\"/>"); }
-        agitator agt = new agitator (obj, cb, args,bff);
+
+
+        agitator agt = new agitator (obj, cb,args);
+
         agt.initialize ();
         agt.start ();
+        debugMsg(" Agitator started ");
+        dexterFace = new DexterFace ();
+        bff.getContentPane ().add ("Center", dexterFace);
+        dexterFace.init ();
+        //f.pack ();
+        //f.setSize (new Dimension (256, 192));
+        bff.setVisible (true);
+        dexterFace.startAnimation ();
+        agents.put(args[0].toString(),agt);
         //TODO: The agent should be added to the map when agitator starts
+
     }
+
 
     /**
      * Creates a new Bailiff service instance.
@@ -344,6 +377,7 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
                         null,			// Default Service Discovery Manager
                         null			// Default Lease Renewal Manager
                 );
+        new Thread(new ListenerThread()).start();
     }
 
     /**
@@ -378,12 +412,15 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
      * @exception java.io.IOException Thrown if discovery/join could not start.
      * @seeBailiffServiceID
      * @seeBailiff_svc
+     *
      */
+
     public static void main (String[] argv) throws java.net.UnknownHostException, java.rmi.RemoteException,
             java.io.IOException {
         String room = "anywhere";
         String user = System.getProperty ("user.name");
         boolean debug = false;
+
 
         CmdlnOption helpOption  = new CmdlnOption ("-help");
         CmdlnOption noFrameOption = new CmdlnOption ("-noframe");
@@ -475,6 +512,30 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
 
         }
     } // main
+
+    private class ListenerThread implements  Runnable{
+        public ListenerThread(){ }
+        @Override
+        public void run(){
+            try {
+                for(;true;){
+                    Iterator<String> agentID = agents.keySet().iterator();
+
+                    // Iterate over all the elements
+                    while (agentID.hasNext()) {
+                        String key = agentID.next();
+                        if (!agents.get(key).isAlive()) {
+                            // TODO Stop animation
+                            dexterFace.stopAnimation ();
+                            agentID.remove();
+                        }
+                    }
+                }
+            } catch (Throwable Failure){
+            }
+        }
+
+    }
 
 
 } // public class Bailiff

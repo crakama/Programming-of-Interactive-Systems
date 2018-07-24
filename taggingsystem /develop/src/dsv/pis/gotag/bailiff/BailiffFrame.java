@@ -25,7 +25,7 @@ public class BailiffFrame extends JFrame
     /**
      * The Bailiff service instance we front a GUI for.
      */
-    protected Bailiff bf;
+    public Bailiff bf;
     //protected JApplet applet;
 
     /**
@@ -107,7 +107,8 @@ public class BailiffFrame extends JFrame
         // The window is located 1/8th of the screen size from upper left corner.
         setLocation (d.width/8, d.height/8);
         // The window is 1/12th wide, 1/10th high, or screen size.
-        setSize (new Dimension ((d.width/12), (d.height/10)));
+        //setSize (new Dimension ((d.width/12), (d.height/10)));
+        setSize(400,400);
 
 //
 //        JApplet applet = new BailiffApplet();
@@ -118,6 +119,7 @@ public class BailiffFrame extends JFrame
       setVisible (true);
 //        applet.start();
     }
+
 
 
     /**

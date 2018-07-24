@@ -75,12 +75,11 @@ public class DexterFace extends JApplet implements ActionListener {
   public void paint (Graphics g) {
     Graphics2D g2 = (Graphics2D) g;
     Dimension d = getSize ();
-    int x = d.width / 10;
-    int y = d.height / 10;
+    int x = d.width / 50;
+    int y = d.height / 50;
     int rectWidth = (d.width * 9) / 10;
     int rectHeight = (d.height * 9) / 10;
     // Arc
-
 
     g2.setStroke (wideStroke);
     g2.setPaint (bg);

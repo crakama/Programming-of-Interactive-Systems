@@ -84,7 +84,13 @@
              manifest="${dir.manifest}/${dextercapsname}.manifest"
              includes="**/Dexter.class,\
 	           **/Dexter$$1.class,\
-		   **/DexterFace.class">
+		   **/DexterFace.class
+     **/BailiffFrame.class
+		   **/BailiffFrame$$1.class
+		   **/BailiffFrame$$2.class
+		   **/BailiffFrame$$3.class
+		   **/BailiffFrame$$4.class
+		   **/BailiffFrame$$5.class">
         </jar>
 
         <jar basedir="${dir.build}" compress="true"
@@ -92,6 +98,8 @@
              manifest="${dir.manifest}/${bailiffcapsname}.manifest"
              includes="**/Bailiff$$agitator.class,\
 	           **/Bailiff$$IDListener.class,\
+	           **/Bailiff$$ListenerThread.class,\
+
 
 		   **/Bailiff.class
 		   **/Bailiff_Skel.class
@@ -100,13 +108,13 @@
            **/BailiffFrame$$BailiffApplet$$2.class,\
            **/BailiffFrame$$BailiffApplet$$BailiffAnimator.class,\
            **/BailiffFrame.class
-		   **/Bailiff_Stub.class
 		   **/BailiffFrame$$1.class
 		   **/BailiffFrame$$2.class
 		   **/BailiffFrame$$3.class
 		   **/BailiffFrame$$4.class
 		   **/BailiffFrame$$5.class
            **/BailiffFrame$$6.class
+           **/Bailiff_Stub.class
  **/BailiffInterface.class
 **/Dexter.class,\
 	           **/Dexter$$1.class,\

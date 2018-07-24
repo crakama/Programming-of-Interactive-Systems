@@ -13,12 +13,16 @@ import java.io.*;
 import java.lang.*;
 import java.util.Random;
 
+import java.awt.*;
+import java.awt.event.*;
 import java.util.UUID;
+import javax.swing.*;
 
 import net.jini.core.lookup.*;
 import net.jini.lookup.*;
 
 import dsv.pis.gotag.util.*;
+import dsv.pis.gotag.bailiff.BailiffInterface;
 
 /**
  * Dexter jumps around randomly among the Bailiffs. He is can be used
@@ -44,6 +48,7 @@ public class Dexter implements Serializable
      */
     protected boolean noFace = false;
 
+    protected boolean framestatus;
     /**
      * Dexter uses a ServiceDiscoveryManager to find Bailiffs.
      * The SDM is not serializable so it must recreated on each new Bailiff.
@@ -111,12 +116,34 @@ public class Dexter implements Serializable
      */
     public void topLevel(String agentID) throws java.io.IOException {
         Random rnd = new Random ();
+//        if(bailiffFrame == null){
+//            framestatus = false ;
+//            debugMsg("BailiffFrame is NULL");
+//        }else {
+//            framestatus = true;
+//        }
 
         // Create a Jini service discovery manager to help us interact with
         // the Jini lookup service.
         SDM = new ServiceDiscoveryManager (null, null);
 
-
+//        DexterFace dexFace = null;
+//        //JFrame f = null;
+//
+//        if (!noFace && framestatus== true) {
+//            // Create a small GUI for this Dexter instance.
+//            //f = new JFrame ("Dexter");
+//            //f.addWindowListener (new WindowAdapter () {
+//            //    public void windowClosing (WindowEvent e) {System.exit (0);}
+//            //});
+//            dexFace = new DexterFace ();
+//            bailiffFrame.getContentPane ().add ("Center", dexFace);
+//            dexFace.init ();
+//            //f.pack ();
+//            //f.setSize (new Dimension (256, 192));
+//            bailiffFrame.setVisible (true);
+//            dexFace.startAnimation ();
+//        }
 
         for (;;) {
 
@@ -209,37 +236,20 @@ public class Dexter implements Serializable
                 }
                 else {
 
-      //              DexterFace dexFace = null;
-  //                  JFrame f = null;
-
-//                    if (!noFace) {
-//                        // Create a small GUI for this Dexter instance.
-//                        f = new JFrame ("Dexter");
-//                        f.addWindowListener (new WindowAdapter () {
-//                            public void windowClosing (WindowEvent e) {System.exit (0);}
-//                        });
-//
-//                        dexFace = new DexterFace ();
-//
-//                        f.getContentPane ().add ("Center", dexFace);
-//                        dexFace.init ();
-//                        f.pack ();
-//                        f.setSize (new Dimension (256, 192));
-//                        f.setVisible (true);
-//                        dexFace.startAnimation ();
-//                    }
-
                     // This is the spot where Dexter tries to migrate.
 
                     try {
                         //TODO: Generate unique UUID and let the agent jump with it to new Bailiff
                         debugMsg ("Agent :" +agentID +": is trying to jump...");
+                        //bfi.migrate (this, "topLevel", new Object [] {agentID});
+                        //Object[] arrayObj = new Object[2];
+                        //arrayObj[0] = agentID;
                         bfi.migrate (this, "topLevel", new Object [] {agentID});
                         SDM.terminate ();	// SUCCESS
-                        //if (!noFace) {
-                       //     dexFace.stopAnimation ();
-                       //     f.setVisible (false);
-                        //}
+//                        if (!noFace && framestatus== true) {
+//                            dexFace.stopAnimation ();
+//                            bailiffFrame.setVisible (false);
+//                        }
                         return;		// SUCCESS
                     }
                     catch (java.rmi.RemoteException e) { // FAILURE
