@@ -109,7 +109,7 @@ public class BailiffFrame extends JFrame
         // The window is 1/12th wide, 1/10th high, or screen size.
         //setSize (new Dimension ((d.width/12), (d.height/10)));
         setSize(400,400);
-
+        //setResizable(false);
 //
 //        JApplet applet = new BailiffApplet();
 //        applet.init();

@@ -66,6 +66,7 @@ public class DexterFace extends JApplet implements ActionListener {
   public synchronized void stopAnimation () {
     if (timer.isRunning ()) {
       timer.stop ();
+      repaint();
     }    
   }
 
@@ -75,8 +76,10 @@ public class DexterFace extends JApplet implements ActionListener {
   public void paint (Graphics g) {
     Graphics2D g2 = (Graphics2D) g;
     Dimension d = getSize ();
-    int x = d.width / 50;
-    int y = d.height / 50;
+    //int x = d.width / 50;
+    //int y = d.height / 50;
+    int x = d.width / 100;
+    int y = d.height / 100;
     int rectWidth = (d.width * 9) / 10;
     int rectHeight = (d.height * 9) / 10;
     // Arc
@@ -85,10 +88,8 @@ public class DexterFace extends JApplet implements ActionListener {
     g2.setPaint (bg);
     g2.draw (smile);		// undraw previous smile
     g2.setPaint (red);
-    smile.setArc (x, y,
-		  rectWidth, rectHeight,
-		  (tix * 5) % 360, 135,
-		  Arc2D.OPEN);
+    //smile.setArc (x, y, rectWidth, rectHeight, (tix * 5) % 360, 135, Arc2D.OPEN);
+    smile.setArc (x, y, rectWidth, rectHeight, (tix ) % 360, 135, Arc2D.OPEN);
 
     g2.draw (smile);
 

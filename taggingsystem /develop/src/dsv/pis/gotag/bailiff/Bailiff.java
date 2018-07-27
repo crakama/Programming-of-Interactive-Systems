@@ -17,14 +17,12 @@ import net.jini.lookup.entry.Location;
 import net.jini.lookup.entry.Name;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.rmi.RMISecurityManager;
 import java.rmi.RemoteException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -53,12 +51,14 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
     protected String room;
     protected String host;
     protected Map propertyMap;
-    protected DexterFace dexterFace = null;
+    protected  DexterFace dexterFace = null;
+    protected int counter = 0;
+
+
     //protected Map dexMap = Collections.synchronizedMap (new HashMap ());
 
-   protected Map<String,Thread> mp = new HashMap<String,Thread>();
-   protected Map<String, Thread> agents = Collections.synchronizedMap(mp);
-   Map<String,DexterFace> dexMap = new ConcurrentHashMap<String,DexterFace>();
+   protected Map<String,Dexter> mp = new HashMap<String,Dexter>();
+   protected Map<String, Dexter> agents = Collections.synchronizedMap(mp);
     protected JoinManager bf_joinmanager;
     protected InetAddress myInetAddress;
     static JFrame bff;
@@ -145,8 +145,11 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
         protected java.lang.reflect.Method myMethod; // Ref. to entry point method
         protected Class [] myParms; // Class reflection of arguments
         protected BailiffFrame bailiffFrame;
-        protected DexterFace dexFace;
+
         protected String agentID;
+        protected DexterFace dexFace;
+        private String count;
+
         /**
          * Creates a new agitator by copying th references to the client
          * object, the name of the entry method and the arguments to
@@ -154,15 +157,17 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
          * @param obj The client object, holding the method to execute
          * @param cb  The name of the entry point method (callback)
          * @param args Arguments to the entry point method(Agent ID and JFrame)
+         * @paramdexterFace
+         * @paramcounter
          * @paramdexFace
          * @parambff
          */
-        public agitator(Object obj, String cb, Object[] args) {
+        public agitator(Object obj, String cb, Object[] args, int cnt) {
             myObj = obj;
             myCb = cb;
             myArgs = args;
-            //bailiffFrame = (BailiffFrame) args[1];
-            //dexFace = dexF;
+            count = String.valueOf(cnt);
+            dexFace = new DexterFace ();
             agentID = args[0].toString();
 
             // If the array of arguments are non-zero we must create an array
@@ -198,14 +203,23 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
          */
         public void run () {
             try {
-               // TODO Add agent unique ID to Map
+
+                agents.put(agentID, (Dexter) myObj);
+                snooze(15000);
+               if(agents.containsKey(agentID)){
+                   bff.getContentPane ().add ("Center", dexFace);
+                   dexFace.init ();
+                   bff.pack ();
+                   bff.setSize (new Dimension(400, 400));
+                   //bff.setVisible (true);
+                   dexFace.startAnimation ();
+                   debugMsg(" Animation " +dexFace+ "for "+ agentID + " agent STARTED at counter= "+count );
+               }
                 if(myArgs.length > 0){
                     debugMsg(" RUN method" + agentID);
                     myMethod.invoke (myObj, myArgs);
                     debugMsg("Migration "+ propertyMap.get(myArgs[0]).toString()+"New Agent arrived at \n");
-                    debugMsg(ping());
-                    debugMsg("agentID at RUN " + agentID);
-                                    }
+                    debugMsg("agentID at RUN " + agentID); }
 
             }
             catch (Throwable t) {
@@ -213,12 +227,25 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
                     log.entry (t);
                 }
             }finally {
-                // Close the connection
-//                if(isAlive()){
-//                    debugMsg(" Thread is still alive");
-//                    dexFace.stopAnimation();
-//                }
+                agents.remove(agentID);
+                debugMsg(" Agent at Counter= "+counter+" removed from MAP" + agentID);
+                dexFace.stopAnimation();
+                debugMsg(" Animation " +dexFace+ "for "+ agentID + " agent STOPPED at counter= "+ counter);
+
             }
+
+
+        }
+
+        /**
+         * Sleep snugly and safely not bothered by interrupts.
+         * @param ms  The number of milliseconds to sleep.
+         */
+        protected void snooze (long ms) {
+            try {
+                Thread.currentThread ().sleep (ms);
+            }
+            catch (java.lang.InterruptedException e) {}
         }
 
     } // class agitator
@@ -295,26 +322,40 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
      * @throws NoSuchMethodException Thrown if the specified entry method
      * does not exist with the expected signature.
      */
-    public void migrate(Object obj, String cb, Object[] args) throws java.rmi.RemoteException,
-            java.lang.NoSuchMethodException {
-        if (debug) {
-            log.entry ("<migrate obj=\"" + obj + "\" cb=\"" + cb + "\" args=\"" + args + "\"/>"); }
+    public ArrayList<Object> migrate(Object obj, String cb, Object[] args) throws java.rmi.RemoteException,java.lang.NoSuchMethodException {
+        if (debug) { log.entry ("<migrate obj=\"" + obj + "\" cb=\"" + cb + "\" args=\"" + args + "\"/>"); }
+        counter++;
 
-
-        agitator agt = new agitator (obj, cb,args);
-
+        agitator agt = new agitator (obj, cb,args,counter);
         agt.initialize ();
         agt.start ();
-        debugMsg(" Agitator started ");
-        dexterFace = new DexterFace ();
-        bff.getContentPane ().add ("Center", dexterFace);
-        dexterFace.init ();
-        //f.pack ();
-        //f.setSize (new Dimension (256, 192));
-        bff.setVisible (true);
-        dexterFace.startAnimation ();
-        agents.put(args[0].toString(),agt);
+        debugMsg(" Agitator started, COUNTER= " + counter);
+        ArrayList<Object> list = new ArrayList<Object>();
+
         //TODO: The agent should be added to the map when agitator starts
+        list.add(0,dexterFace);
+        list.add(1,counter);
+        return list;
+    }
+
+    @Override
+    public boolean isIt(String agentID) throws RemoteException {
+        Iterator<String> activeAgents = agents.keySet().iterator();
+        boolean status = false;
+        // Iterate over all the elements
+        while (activeAgents.hasNext()) {
+            String key = activeAgents.next();
+            if (agents.get(agentID).isItStatus()==true) {
+                status = true;
+            }else if(agents.get(agentID).isItStatus()==true){
+                status = false;
+            }
+        }
+
+        return status;
+    }
+
+    public void stopAnimation(DexterFace dex, String agentID, String counter ){
 
     }
 
@@ -377,7 +418,7 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
                         null,			// Default Service Discovery Manager
                         null			// Default Lease Renewal Manager
                 );
-        new Thread(new ListenerThread()).start();
+        //new Thread(new ListenerThread()).start();
     }
 
     /**

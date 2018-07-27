@@ -11,6 +11,7 @@ package dsv.pis.gotag.bailiff;
 
 import java.io.*;
 import java.lang.*;
+import java.util.ArrayList;
 import java.util.Random;
 
 import java.awt.*;
@@ -48,7 +49,7 @@ public class Dexter implements Serializable
      */
     protected boolean noFace = false;
 
-    protected boolean framestatus;
+    protected boolean itStatus;
     /**
      * Dexter uses a ServiceDiscoveryManager to find Bailiffs.
      * The SDM is not serializable so it must recreated on each new Bailiff.
@@ -105,6 +106,10 @@ public class Dexter implements Serializable
         catch (java.lang.InterruptedException e) {}
     }
 
+    public boolean isItStatus() {
+        return itStatus;
+    }
+
     /**
      * This is Dexter's main program once he is on his way. In short, he
      * gets himself a service discovery manager and asks it about Bailiffs.
@@ -157,7 +162,7 @@ public class Dexter implements Serializable
             debugMsg ("Entering restraint sleep.");
 
             //snooze (5000);
-            snooze (10000);
+            snooze (5000);
 
             debugMsg ("Leaving restraint sleep.");
 
@@ -191,12 +196,13 @@ public class Dexter implements Serializable
 
             // While we still have at least one Bailiff service to try...
 
-            while (0 < nofItems) {
+            while (nofItems > 0) {
+                debugMsg ("while (nofItems > 0) ");
 
                 // Select one Bailiff randomly.
 
                 int idx = 0;
-                if (1 < nofItems) {
+                if (nofItems > 1) {
                     idx = rnd.nextInt (nofItems);
                 }
 
@@ -224,8 +230,8 @@ public class Dexter implements Serializable
 
                 debugMsg (accepted ? "Accepted." : "Not accepted.");
 
-                // If the ping failed, delete that Bailiff from the array and
-                // try another. The current (idx) entry in the list of service items
+                // If the ping failed, delete that Bailiff from the array and try another.
+                //  The current (idx) entry in the list of service items
                 // is replaced by the last item in the list, and the list length
                 // is decremented by one.
 
@@ -244,8 +250,11 @@ public class Dexter implements Serializable
                         //bfi.migrate (this, "topLevel", new Object [] {agentID});
                         //Object[] arrayObj = new Object[2];
                         //arrayObj[0] = agentID;
-                        bfi.migrate (this, "topLevel", new Object [] {agentID});
+                        ArrayList<Object> dex = bfi.migrate (this, "topLevel", new Object [] {agentID});
                         SDM.terminate ();	// SUCCESS
+                        debugMsg ("SDM.terminate () FINISHED at Counter= "+ String.valueOf(dex.get(1)));
+                        //bfi.stopAnimation((DexterFace) dex.get(0), agentID, String.valueOf(dex.get(1)));
+                        //dex.clear();
 //                        if (!noFace && framestatus== true) {
 //                            dexFace.stopAnimation ();
 //                            bailiffFrame.setVisible (false);
