@@ -17,13 +17,12 @@ import net.jini.lookup.entry.Location;
 import net.jini.lookup.entry.Name;
 
 import javax.swing.*;
-import java.awt.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.rmi.RMISecurityManager;
 import java.rmi.RemoteException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 
 /**
  * The Bailiff is a Jini service that provides an execution environment
@@ -205,16 +204,7 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
             try {
 
                 agents.put(agentID, (Dexter) myObj);
-                snooze(15000);
-               if(agents.containsKey(agentID)){
-                   bff.getContentPane ().add ("Center", dexFace);
-                   dexFace.init ();
-                   bff.pack ();
-                   bff.setSize (new Dimension(400, 400));
-                   //bff.setVisible (true);
-                   dexFace.startAnimation ();
-                   debugMsg(" Animation " +dexFace+ "for "+ agentID + " agent STARTED at counter= "+count );
-               }
+
                 if(myArgs.length > 0){
                     debugMsg(" RUN method" + agentID);
                     myMethod.invoke (myObj, myArgs);
@@ -229,8 +219,6 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
             }finally {
                 agents.remove(agentID);
                 debugMsg(" Agent at Counter= "+counter+" removed from MAP" + agentID);
-                dexFace.stopAnimation();
-                debugMsg(" Animation " +dexFace+ "for "+ agentID + " agent STOPPED at counter= "+ counter);
 
             }
 
@@ -268,11 +256,36 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
             log.entry ("<ping/>");
         }
 
-        return ("Ping echo from Bailiff on host=" + host
-                + " [" + myInetAddress.getHostAddress () + "] "
-                + " room=" + room
-                + " user=" + user
-                + ".");
+        return ("Ping echo from Bailiff of Room: " + " [" + room+ "] " + " user=" + user + ".");
+    }
+
+//    public String ping () throws java.rmi.RemoteException
+//    {
+//        if (debug) {
+//            log.entry ("<ping/>");
+//        }
+//
+//        return ("Ping echo from Bailiff on host=" + host
+//                + " [" + myInetAddress.getHostAddress () + "] "
+//                + " room=" + room
+//                + " user=" + user
+//                + ".");
+//    }
+    public List<String> getActiveAgents () {
+
+        Iterator<String> activeAgents = agents.keySet().iterator();
+        List listofAgents = new ArrayList();
+        // Iterate over all the elements
+        while (activeAgents.hasNext()) {
+            String agentID = activeAgents.next();
+            listofAgents.add(agentID);
+        }
+
+//        if (debug) {
+//            log.entry ("<getProperty key=\"" + key + "\"/>");
+//        }
+//        return (String) propertyMap.get (key.toLowerCase ());
+        return listofAgents;
     }
 
 
@@ -330,6 +343,7 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
         agt.initialize ();
         agt.start ();
         debugMsg(" Agitator started, COUNTER= " + counter);
+
         ArrayList<Object> list = new ArrayList<Object>();
 
         //TODO: The agent should be added to the map when agitator starts
@@ -338,25 +352,39 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
         return list;
     }
 
+
     @Override
-    public boolean isIt(String agentID) throws RemoteException {
+    public boolean isItHere() throws RemoteException {
         Iterator<String> activeAgents = agents.keySet().iterator();
         boolean status = false;
         // Iterate over all the elements
         while (activeAgents.hasNext()) {
-            String key = activeAgents.next();
-            if (agents.get(agentID).isItStatus()==true) {
+            String agentID = activeAgents.next();
+            if ( agents.get(agentID).getStatusType()==AgentStatusType.STATUS_isIT) {
                 status = true;
-            }else if(agents.get(agentID).isItStatus()==true){
-                status = false;
             }
         }
 
         return status;
     }
 
-    public void stopAnimation(DexterFace dex, String agentID, String counter ){
+    @Override
+    public boolean tagAgent(String agentID)throws RemoteException {
+        boolean tagStatus = false;
+        Dexter dex = agents.get(agentID);
+        if(!(dex ==null) && (dex.getStatusType()== AgentStatusType.STATUS_TAGGABLE)){
+            dex.setStatusType(AgentStatusType.STATUS_isIT);
+            tagStatus = true;
+        }else{
+           tagStatus = false;
+        }
+        return tagStatus;
+    }
 
+    public AgentStatusType agentStatusType(String){
+
+
+        return null;
     }
 
 
@@ -565,7 +593,7 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
                     // Iterate over all the elements
                     while (agentID.hasNext()) {
                         String key = agentID.next();
-                        if (!agents.get(key).isAlive()) {
+                        if (true) {
                             // TODO Stop animation
                             dexterFace.stopAnimation ();
                             agentID.remove();

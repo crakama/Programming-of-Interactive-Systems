@@ -6,6 +6,7 @@
 package dsv.pis.gotag.bailiff;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This interface is for the Bailiff's clients. This is mobile code which
@@ -32,6 +33,9 @@ public interface BailiffInterface
     throws
       java.rmi.RemoteException;
 
+  String getRoom ()throws
+          java.rmi.RemoteException;
+
   /**
    * The entry point for mobile code.
    * The client sends and object (itself perhaps), a string
@@ -54,7 +58,8 @@ public interface BailiffInterface
     throws
       java.rmi.RemoteException,
       java.lang.NoSuchMethodException;
-  public boolean isIt (String agentID) throws java.rmi.RemoteException;
+  public boolean isItHere () throws java.rmi.RemoteException;
 
-  void stopAnimation(DexterFace dex, String id, String agentID)throws java.rmi.RemoteException, java.lang.NoSuchMethodException;
+  public List getActiveAgents ()throws java.rmi.RemoteException;
+  public boolean tagAgent(String agentID)throws java.rmi.RemoteException;
 }

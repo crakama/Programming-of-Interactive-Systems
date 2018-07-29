@@ -84,6 +84,7 @@
              manifest="${dir.manifest}/${dextercapsname}.manifest"
              includes="**/Dexter.class,\
 	           **/Dexter$$1.class,\
+	           **/AgentStatusType.class
 		   **/DexterFace.class
      **/BailiffFrame.class
 		   **/BailiffFrame$$1.class
@@ -98,10 +99,9 @@
              manifest="${dir.manifest}/${bailiffcapsname}.manifest"
              includes="**/Bailiff$$agitator.class,\
 	           **/Bailiff$$IDListener.class,\
-	           **/Bailiff$$ListenerThread.class,\
-
 
 		   **/Bailiff.class
+		   **/AgentStatusType.class
 		   **/Bailiff_Skel.class
 		   **/BailiffFrame$$BailiffApplet.class,\
            **/BailiffFrame$$BailiffApplet$$1.class,\
