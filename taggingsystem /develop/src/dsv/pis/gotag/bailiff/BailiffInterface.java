@@ -61,5 +61,5 @@ public interface BailiffInterface
   public boolean isItHere () throws java.rmi.RemoteException;
 
   public List getActiveAgents ()throws java.rmi.RemoteException;
-  public boolean tagAgent(String agentID)throws java.rmi.RemoteException;
+  public List tagAgent(String agentID)throws java.rmi.RemoteException;
 }

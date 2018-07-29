@@ -56,8 +56,8 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
 
     //protected Map dexMap = Collections.synchronizedMap (new HashMap ());
 
-   protected Map<String,Dexter> mp = new HashMap<String,Dexter>();
-   protected Map<String, Dexter> agents = Collections.synchronizedMap(mp);
+   protected Map<String,Dexter> agents = new HashMap<String,Dexter>();
+   //protected Map<String, Dexter>  agents= Collections.synchronizedMap(mp);
     protected JoinManager bf_joinmanager;
     protected InetAddress myInetAddress;
     static JFrame bff;
@@ -202,23 +202,34 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
          */
         public void run () {
             try {
-
-                agents.put(agentID, (Dexter) myObj);
+                synchronized (agents) {
+                    while (agents.containsKey(agentID)) {
+                        try {
+                            agents.wait();
+                        } catch (Exception e) {
+                            if (debug)
+                                e.printStackTrace();
+                        }
+                    }
+                    agents.put(agentID, (Dexter) myObj);
+                }
 
                 if(myArgs.length > 0){
-                    debugMsg(" RUN method" + agentID);
+                    debugMsg(" RUN method" + agentID +"\n");
                     myMethod.invoke (myObj, myArgs);
                     debugMsg("Migration "+ propertyMap.get(myArgs[0]).toString()+"New Agent arrived at \n");
                     debugMsg("agentID at RUN " + agentID); }
-
             }
             catch (Throwable t) {
                 if (debug) {
                     log.entry (t);
                 }
             }finally {
-                agents.remove(agentID);
-                debugMsg(" Agent at Counter= "+counter+" removed from MAP" + agentID);
+                synchronized (agents) {
+                    agents.remove(agentID);
+                    debugMsg(" Agent " + agentID +" removed from ROOM " + getRoom() +" Counter= "+counter +"\n");
+                    agents.notifyAll();
+                }
 
             }
 
@@ -272,20 +283,17 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
 //                + ".");
 //    }
     public List<String> getActiveAgents () {
+        synchronized (agents) {
+            Iterator<String> activeAgents = agents.keySet().iterator();
+            List listofAgents = new ArrayList();
+            // Iterate over all the elements
+            while (activeAgents.hasNext()) {
+                String agentID = activeAgents.next();
+                listofAgents.add(agentID);
+            }
 
-        Iterator<String> activeAgents = agents.keySet().iterator();
-        List listofAgents = new ArrayList();
-        // Iterate over all the elements
-        while (activeAgents.hasNext()) {
-            String agentID = activeAgents.next();
-            listofAgents.add(agentID);
-        }
-
-//        if (debug) {
-//            log.entry ("<getProperty key=\"" + key + "\"/>");
-//        }
-//        return (String) propertyMap.get (key.toLowerCase ());
         return listofAgents;
+        }
     }
 
 
@@ -342,7 +350,7 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
         agitator agt = new agitator (obj, cb,args,counter);
         agt.initialize ();
         agt.start ();
-        debugMsg(" Agitator started, COUNTER= " + counter);
+        debugMsg(" Agitator started, COUNTER= " + counter +"\n");
 
         ArrayList<Object> list = new ArrayList<Object>();
 
@@ -355,13 +363,15 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
 
     @Override
     public boolean isItHere() throws RemoteException {
-        Iterator<String> activeAgents = agents.keySet().iterator();
         boolean status = false;
-        // Iterate over all the elements
-        while (activeAgents.hasNext()) {
-            String agentID = activeAgents.next();
-            if ( agents.get(agentID).getStatusType()==AgentStatusType.STATUS_isIT) {
-                status = true;
+        synchronized (agents) {
+            Iterator<String> activeAgents = agents.keySet().iterator();
+            // Iterate over all the elements
+            while (activeAgents.hasNext()) {
+                String agentID = activeAgents.next();
+                if ( agents.get(agentID).getStatusType()==AgentStatusType.STATUS_isIT) {
+                    status = true;
+                }
             }
         }
 
@@ -369,22 +379,24 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
     }
 
     @Override
-    public boolean tagAgent(String agentID)throws RemoteException {
-        boolean tagStatus = false;
-        Dexter dex = agents.get(agentID);
-        if(!(dex ==null) && (dex.getStatusType()== AgentStatusType.STATUS_TAGGABLE)){
-            dex.setStatusType(AgentStatusType.STATUS_isIT);
-            tagStatus = true;
-        }else{
-           tagStatus = false;
+    public List tagAgent(String agentID)throws RemoteException {
+        List tagStatus = new ArrayList();
+        synchronized (agents) {
+            Dexter dex = agents.get(agentID);
+            if(!(dex ==null) && (dex.getStatusType()== AgentStatusType.STATUS_TAGGABLE)){
+                dex.setStatusType(AgentStatusType.STATUS_isIT);
+                tagStatus.add(0,agentID);
+                tagStatus.add(1,dex.getStatusType());
+            }else if(dex == null){
+                tagStatus.add(0,null);
+                tagStatus.add(1,null);
+            }else {
+                tagStatus.add(0,agentID);
+                tagStatus.add(1,dex.getStatusType());
+            }
         }
+
         return tagStatus;
-    }
-
-    public AgentStatusType agentStatusType(String){
-
-
-        return null;
     }
 
 

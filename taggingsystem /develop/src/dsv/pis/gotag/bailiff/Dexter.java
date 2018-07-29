@@ -91,11 +91,11 @@ public class Dexter implements Serializable
         this.noFace = noFace;
         if(itPlayer){
             setStatusType(AgentStatusType.STATUS_isIT);
-            debugMsg("Agent Initialised with status: STATUS_isIT");
+            debugMsg("Agent Initialised with status: STATUS_isIT \n");
 
         }else {
             setStatusType(AgentStatusType.STATUS_TAGGABLE);
-            debugMsg("Agent Initialised with status: STATUS_TAGGABLE");
+            debugMsg("Agent Initialised with status: STATUS_TAGGABLE \n");
         }
 
 
@@ -155,21 +155,21 @@ public class Dexter implements Serializable
             // The restraint sleep is just there so we don't get hyperactive
             // and confuse the slow human beings.
 
-            debugMsg ("Entering restraint sleep.");
+            debugMsg ("Agent: "+agentID+" Entering restraint sleep.\n");
 
             //snooze (5000);
             snooze(20000);
 
-            debugMsg ("Leaving restraint sleep.");
+            debugMsg ("Agent: "+agentID+" Leaving restraint sleep.\n");
 
             // Enter a loop in which Dexter tries to find some Bailiffs.
 
             do {
 
                 if (0 < retryInterval) {
-                    debugMsg ("No Bailiffs detected - sleeping.");
+                    debugMsg ("No Bailiffs detected - sleeping.\n");
                     snooze (retryInterval);
-                    debugMsg ("Waking up.");
+                    debugMsg ("Agent: "+agentID+" Waking up.\n");
                 }
 
                 // Put our query, expressed as a service template, to the Jini
@@ -184,7 +184,7 @@ public class Dexter implements Serializable
 
             // We have the Bailiffs.
 
-            debugMsg ("Found " + svcItems.length + " Bailiffs.");
+            debugMsg ("Found " + svcItems.length + " Bailiffs.\n");
 
             // Now enter a loop in which we try to ping and migrate to them.
 
@@ -208,7 +208,7 @@ public class Dexter implements Serializable
 
                     // Try to ping the selected Bailiff.
 
-                    debugMsg ("Agent" +agentID+" Trying to ping Each Bailiff...");
+                    debugMsg ("Agent" +agentID+" Trying to ping Each Bailiff...\n");
 
                     try {
                         if (obj instanceof BailiffInterface) {
@@ -225,14 +225,14 @@ public class Dexter implements Serializable
                         }
                     }
 
-                    debugMsg (accepted ? "Ping Accepted." : "Ping Not accepted.");
+                    debugMsg (accepted ? "Ping Accepted." : "Ping Not accepted.\n");
                     List activeAgents = bfi.getActiveAgents();
                     if(!activeAgents.isEmpty() && activeAgents.contains(agentID)){
                         agentLocationStaus = true;
-                        debugMsg ("Agent location TRUE");
+                        debugMsg ("Agent's "+agentID+" Current location is in Bailiff "+ bfiRoom +"\n");
                     }else {
                         agentLocationStaus = false;
-                        debugMsg ("Agent location FALSE");
+                        debugMsg ("Agent's "+agentID+ "Current location NOT in Bailiff: "+ bfiRoom + "\n");
                     }
                     // If the ping failed, delete that Bailiff from the array and try another.
                     //  The current (idx) entry in the list of service items
@@ -242,7 +242,7 @@ public class Dexter implements Serializable
                     if (accepted == false ) {
                         svcItems[idx] = svcItems[nofItems - 1];
                         nofItems -= 1;
-                        debugMsg ("Agent :" +agentID +": found FALSE PING or EMPTY BAILIFF");
+                        debugMsg ("Agent :" +agentID +": found FALSE PING or EMPTY BAILIFF \n" );
                         continue;		// Leaves the current loop iteration and goes to next element(BFF) in the list
                     } //TODO, if no agents found in the Bailiff
 
@@ -250,29 +250,40 @@ public class Dexter implements Serializable
 
                         if(statusType.equals(AgentStatusType.STATUS_isIT) && !(activeAgents.isEmpty()) && agentLocationStaus==true){
                             int randomAgent = 0;
-                            if(activeAgents.size() > 1){
+                            if(activeAgents.size() > 0){
                                 randomAgent = rnd.nextInt(activeAgents.size());
                                 String agID = (String) activeAgents.get(randomAgent);
-                                debugMsg("Agent" + agentID +"in room "+bfiRoom+" trying to TAG agent"+ agID);
-                                boolean  tagStatus = bfi.tagAgent(agID);
-                                if(tagStatus == true){
-                                    debugMsg ("TAGGING SUCCEEDED,Agent :" + agID +":  is an IT-PLAYER!!!");
+                                if(!agentID.equalsIgnoreCase(agID)){ //Don't TAG yourself
+                                debugMsg("TAGGING IN PROGRESS, IT-PLAYER " + agentID +"in room "+bfiRoom+" ATTEMPTING TO TAG agent "+ agID + "\n");
+                                List tagStatus = bfi.tagAgent(agID);
+                                if(tagStatus.get(1) == AgentStatusType.STATUS_isIT){
+                                    debugMsg ("TAGGING SUCCEEDED,Agent :" + agID +":  is an IT-PLAYER!!! \n");
                                     setStatusType(AgentStatusType.STATUS_TAGGABLE);
                                     continue;
-                                }else{
-                                    debugMsg ("TAGGING FAILED");
+                                }else if(tagStatus.get(0) == null){
+                                    debugMsg ("TAGGING ATTEMPT FAILED, Agent "+agID+ " ,to be tagged NOT FOUND in Bailiff " +bfiRoom + "\n");
 
                                     continue;
                                 }
+                                else{
+                                    debugMsg ("TAGGING ATTEMPT FAILED, Agent "+tagStatus.get(0)+ " to be tagged has status " + tagStatus.get(1) + "\n");
+
+                                    continue;
+                                }
+                                } else {
+                                    debugMsg ("SELF TAGGING NOT ALLOWED \n");
+                                    continue;
+                                }
                             }else {
-                                debugMsg ("TAGGING NOT ALLOWED: Active Agents LESS THAN 1");
+                                debugMsg ("TAGGING NOT ALLOWED: Active Agents in Bailiff "+bfiRoom+" LESS THAN 1 \n");
                                 continue;
                             }
 
                         }else if(statusType.equals(AgentStatusType.STATUS_isIT) && !(activeAgents.isEmpty()) && agentLocationStaus==false){
                             try {
-                                debugMsg ("IT-PLAYER "+agentID+" trying to MIGRATE to Bailiff with Agents ");
+                                debugMsg ("IT-PLAYER Agent "+agentID+" found Bailiff "+bfiRoom+" with agents but its NOT current location, TRYING TO MIGRATE \n");
                                 bfi.migrate (this, "topLevel", new Object [] {agentID});
+                                debugMsg ("Agent "+agentID+" is IT-PLAYER, MIGRATED SUCCESSFULLY to Bailiff "+bfiRoom+"\n");
                             } catch (NoSuchMethodException e) {
                                 e.printStackTrace();
                             }
@@ -283,20 +294,20 @@ public class Dexter implements Serializable
                             try {
                                 if(isIt == false){
 
-                                debugMsg ("Agent :" +agentID +": NOT IT-PLAYER,found NON EMPTY Bailiff with no IT-PLAYER, trying to JUMP...");
+                                debugMsg ("Agent :" +agentID +" : of "+ statusType+" found NON EMPTY "+bfiRoom+" IT-PLAYER ABSENT, trying to JUMP...\n");
                                 ArrayList<Object> dex = bfi.migrate (this, "topLevel", new Object [] {agentID});
                                 SDM.terminate ();
-                                debugMsg ("SUCCESS, break code execution at Counter= "+ String.valueOf(dex.get(1)));
+                                debugMsg ("Agent "+agentID+" MIGRATED SUCCESSFULLY, to: "+bfiRoom+" break code execution at Counter= "+ String.valueOf(dex.get(1)) + "\n");
                                 return;		// SUCCESS, break code execution
                             }else if(isIt == true) {
                                 svcItems[idx] = svcItems[nofItems - 1];
                                 nofItems -= 1;
-                                debugMsg ("Agent :" +agentID +": AVOIDS migration to BFF, IT-PLAYER PRESENT");
+                                debugMsg ("Agent :" +agentID +":  of "+ statusType+" AVOIDED MIGRATION to "+bfiRoom+", IT-PLAYER PRESENT, trying another Bailiff... \n");
                                 continue; // Leaves the current loop iteration and goes to next element(another BFF) in the list
                         }
 
 
-                        debugMsg ("Agent didn't make the jump...");
+                        debugMsg ("Agent didn't make the jump...\n");
 
                     } catch (NoSuchMethodException e) {
                                 e.printStackTrace();
@@ -308,7 +319,7 @@ public class Dexter implements Serializable
 
             }	// while there are candidates left
 
-            debugMsg ("All Bailiffs were bad.");
+            debugMsg ("All Bailiffs were bad.\n");
 
         } // for ever // go back up and try to find more Bailiffs
     }
