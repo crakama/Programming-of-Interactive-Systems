@@ -5,7 +5,6 @@
 
 package dsv.pis.gotag.bailiff;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -47,6 +46,8 @@ public interface BailiffInterface
    * @param args The parameters for the callback method. Note that if
    * the method has a signature without arguments the value of args
    * should be an empty array. Setting args to null will not work.
+   * @param code
+   * @param targetID
    * @paramagentID
    * @exception java.rmi.RemoteException Thrown if there is an RMI problem.
    * @exception java.lang.NoSuchMethodException Thrown if the proposed
@@ -54,12 +55,12 @@ public interface BailiffInterface
    * the number of arguments is wrong or are of the wrong type).
    * 
    */
-  public ArrayList<Object> migrate(Object obj, String cb, Object[] args)
+  public void migrate(Object obj, String cb, Object[] args, int code, String targetID)
     throws
       java.rmi.RemoteException,
       java.lang.NoSuchMethodException;
   public boolean isItHere () throws java.rmi.RemoteException;
 
   public List getActiveAgents ()throws java.rmi.RemoteException;
-  public List tagAgent(String agentID)throws java.rmi.RemoteException;
+  public void tagAgent(Object obj, String selfID, String agentID)throws java.rmi.RemoteException;
 }

@@ -161,11 +161,10 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
          * @paramdexFace
          * @parambff
          */
-        public agitator(Object obj, String cb, Object[] args, int cnt) {
+        public agitator(Object obj, String cb, Object[] args) {
             myObj = obj;
             myCb = cb;
             myArgs = args;
-            count = String.valueOf(cnt);
             agentID = args[0].toString();
 
             // If the array of arguments are non-zero we must create an array
@@ -339,25 +338,27 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
      * @param cb  The name of the entry (callback) method to call.
      * @param args Array of arguments to the entry method. The elements in
      * the array must match the entry method's signature.
+     * @param code
      * @paramagentID
      * @throws NoSuchMethodException Thrown if the specified entry method
      * does not exist with the expected signature.
      */
-    public ArrayList<Object> migrate(Object obj, String cb, Object[] args) throws java.rmi.RemoteException,java.lang.NoSuchMethodException {
-        if (debug) { log.entry ("<migrate obj=\"" + obj + "\" cb=\"" + cb + "\" args=\"" + args + "\"/>"); }
-        counter++;
+    @Override
+    public void migrate(Object obj, String cb, Object[] args, int code, String targetID) throws java.rmi.RemoteException,java.lang.NoSuchMethodException {
+        if(code == 0){
+            agitator agt = new agitator (obj, cb,args);
+            agt.initialize ();
+            agt.start ();
+        }else {
+            String selfID = (String) args[0];
+            tagAgent(obj,selfID,targetID);
+            agitator agt = new agitator (obj, cb,args);
+            agt.initialize ();
+            agt.start ();
 
-        agitator agt = new agitator (obj, cb,args,counter);
-        agt.initialize ();
-        agt.start ();
-
-        ArrayList<Object> list = new ArrayList<Object>();
-
-        //TODO: The agent should be added to the map when agitator starts
-        list.add(0,dexterFace);
-        list.add(1,counter);
-        return list;
+        }
     }
+
 
 
     @Override
@@ -376,31 +377,48 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
         }
         return status;
     }
-
-    @Override
-    public List tagAgent(String agentID)throws RemoteException {
-        List tagStatus = new ArrayList();
-        synchronized (agents) {
-            Dexter dex = agents.get(agentID);
-            if(!(dex ==null) && (dex.getStatusType()== AgentStatusType.STATUS_TAGGABLE)){
-                dex.setStatusType(AgentStatusType.STATUS_IS_IT);
-                tagStatus.add(0,agentID);
-                tagStatus.add(1,dex.getStatusType());
-                tagStatus.add(2,dex);
-            }else if(dex == null){
-                tagStatus.add(0,null);
-                tagStatus.add(1,null);
-                tagStatus.add(2,dex);
-            }else {
-                tagStatus.add(0,agentID);
-                tagStatus.add(1,dex.getStatusType());
-                tagStatus.add(2,dex);
-            }
+    public int getNumberofAgents(){
+        int size =0;
+        synchronized (agents){
+            size = agents.size();
             agents.notifyAll();
         }
+        return size;
+    }
 
+    @Override
+    public void tagAgent(Object obj, String selfID, String victimID)throws RemoteException {
+        int numberofAgents = getNumberofAgents();
+        Dexter self = (Dexter) obj;
+        //if(numberofAgents > 0){
+            synchronized (agents){
+                if(agents.size() > 0){
+                    if(!victimID.equalsIgnoreCase(selfID)) { //Don't TAG yourself
+                        Dexter dexTarget = agents.get(victimID);
+                        if(!(dexTarget ==null) && (dexTarget.getStatusType()== AgentStatusType.STATUS_TAGGABLE)){
+                            debugMsg(" TagGame: " + selfID+" : Status: "+self.getStatusType()+"    TAGGING A TARGET ...in "+getRoom());
+                            dexTarget.setStatusType(AgentStatusType.STATUS_IS_IT);
+                            if(dexTarget.getStatusType()== AgentStatusType.STATUS_IS_IT){
+                                debugMsg(" TagGame: " + victimID+" : Status: "+dexTarget.getStatusType()+"    is an IT-PLAYER!!!");
+                                self.setStatusType(AgentStatusType.STATUS_TAGGABLE);
+                                debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Successfully Tagged another Agent");
+                            }
+                        }else if(dexTarget == null){
+                            debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Failed to Tag, Victim not found in "+getRoom());
+                        }else {
+                            debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Failed to Tag, victim has status "+dexTarget.getStatusType());
+                        }
+                    }else {
+                        debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Failed to Tag, SELF-TAG not allowed");
+                        agents.notifyAll();
+                    }
+                    }else {
+                    debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Failed to Tag, Number of active Agents= "+numberofAgents);
+                    agents.notifyAll();
+                }
 
-        return tagStatus;
+                }
+
     }
 
 

@@ -15,16 +15,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import java.awt.*;
-import java.awt.event.*;
 import java.util.UUID;
-import javax.swing.*;
 
 import net.jini.core.lookup.*;
 import net.jini.lookup.*;
 
 import dsv.pis.gotag.util.*;
-import dsv.pis.gotag.bailiff.BailiffInterface;
 
 /**
  * Dexter jumps around randomly among the Bailiffs. He is can be used
@@ -66,6 +62,7 @@ public class Dexter implements Serializable
      * template IS serializable so Dexter only needs to instantiate it once.
      */
     protected ServiceTemplate bailiffTemplate;
+    private int code;
 
     /**
      * Outputs a diagnostic message on standard output. This will be on
@@ -142,6 +139,8 @@ public class Dexter implements Serializable
     public void topLevel(String agentID) throws java.io.IOException {
         Random rnd = new Random ();
         boolean agentLocationStaus;
+        String targetID = null;
+
         // Create a Jini service discovery manager to help us interact with
         // the Jini lookup service.
         SDM = new ServiceDiscoveryManager (null, null);
@@ -225,7 +224,7 @@ public class Dexter implements Serializable
 
                     debugMsg (accepted ? "Ping Accepted." : "Ping Rejected.");
                     List activeAgents = bfi.getActiveAgents();
-                    debugMsg(" TagGame: Room" + bfiRoom +" : has: "+activeAgents.size()+"    ACTIVE aGENTS");
+                    debugMsg(" TagGame: Room" + bfiRoom +" : has: "+activeAgents.size()+"    ACTIVE agents");
                     if(!activeAgents.isEmpty() && activeAgents.contains(agentID)){
                         agentLocationStaus = true;
                         //debugMsg ("Agent's "+agentID+" Current location is in Bailiff "+ bfiRoom +" with \n"+getStatusType());
@@ -245,84 +244,47 @@ public class Dexter implements Serializable
                         continue;		// Leaves the current loop iteration and goes to next element(BFF) in the list
                     } //TODO, if no agents found in the Bailiff
 
-                    else if(!(activeAgents.isEmpty())){// This is the spot where Dexter tries to Tag.
-
-                        if(getStatusType().equals(AgentStatusType.STATUS_IS_IT) && agentLocationStaus==true){
+                    else {// This is the spot where Dexter tries to Tag or Migrate
+                        if(getStatusType().equals(AgentStatusType.STATUS_IS_IT)){ //I am IT-PLAYER
                             int randomAgent = 0;
-                            String ageID;
-                            if(activeAgents.size() > 0){
+                            randomAgent = rnd.nextInt(activeAgents.size());
+                            targetID = (String) activeAgents.get(randomAgent);
+                            if(((activeAgents.size() > 0)) && agentLocationStaus==true){ //THis Bailiff is my current location and has Agents
+                                debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Found Local Bailiff-"+bfiRoom+" with " +activeAgents.size()+" agents,Trying to Tag" );
+                               bfi.tagAgent(this,agentID,targetID);
+                                debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Tagging-Attempt on Bailiff-"+bfiRoom +" finished, trying another Bailiff");
+                               continue;
+                            }else if(((activeAgents.size() > 0)) && agentLocationStaus==false){ //This Bailiff has agents but not my current location
+                                try {
+                                    code = 1;
+                                    debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Found Remote Bailiff-"+bfiRoom+" with " +activeAgents.size()+" agents,Trying to Migrate" );
+                                    bfi.migrate (this, "topLevel", new Object [] {agentID}, code,targetID);
+                                    debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Successfully Migrated to Bailiff-"+bfiRoom+" to TAG a victim");
+                                    SDM.terminate ();
+                                    return;// SUCCESS, break code execution
+                                } catch (NoSuchMethodException e) {
+                                    e.printStackTrace();
+                                }
+                            }else{
+                                debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Failed to Migrate to Bailiff-"+bfiRoom +" NoofAgents= "+activeAgents.size()+" trying another Bailiff");
+                                continue;
 
-                                randomAgent = rnd.nextInt(activeAgents.size());
-                                ageID = (String) activeAgents.get(randomAgent);
-
-                                if(!ageID.equalsIgnoreCase(agentID)){ //Don't TAG yourself
-                                debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    TAGGING IN PROGRESS: \n :::::::: "+ageID +" in " +bfiRoom);
-                                List tagStatus = bfi.tagAgent(ageID);
-                                Dexter dexter = (Dexter) tagStatus.get(2);
-                                if(tagStatus.get(1) == AgentStatusType.STATUS_IS_IT){
-                                    debugMsg(" TagGame: " + tagStatus.get(1) +" : Status: "+dexter.getStatusType()+"    is an IT-PLAYER!!!");
-                                    setStatusType(AgentStatusType.STATUS_TAGGABLE);
-                                    debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Choosing new bailiff to migrate to");
-                                    continue;
-                                }else if(tagStatus.get(0) == null){
-                                    debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Failed to Tag, victim not found in "+bfiRoom);
-                                    continue;
-                                }
-                                else{
-                                    debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Failed to Tag, victim has status "+tagStatus.get(1));
-                                    continue;
-                                }
-                                } else {
-                                    debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Failed to Tag, SELF-TAG not allowed");
-                                    continue;
-                                }
-                            }else {
-                                debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Failed to Tag, Number of Active Agents in Bailiff-"+bfiRoom+"= "+activeAgents.size() );
-                                continue; // Leaves the current loop iteration and goes to next element(a BFF) in the list
                             }
-
-                        }else if(statusType.equals(AgentStatusType.STATUS_IS_IT) && agentLocationStaus==false){
+                        }else { //Agent Not IT-PLAYER
                             try {
-                                debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Found Bailiff-"+bfiRoom+"," +
-                                    "NOT its current location,\n ::::::::  Room has "+activeAgents.size()+" agents,"+agentID+"      Trying to Migrate to the Bailiff-"+bfiRoom );
-                                bfi.migrate (this, "topLevel", new Object [] {agentID});
+                                code=0;
+                                debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Trying to Migrate to Bailiff-"+bfiRoom);
+                                bfi.migrate (this, "topLevel", new Object [] {agentID}, code,targetID);
                                 debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Successfully Migrated to Bailiff-"+bfiRoom);
                                 SDM.terminate ();
                                 return;// SUCCESS, break code execution
-
                             } catch (NoSuchMethodException e) {
                                 e.printStackTrace();
                             }
 
-                        } else if(!(statusType.equals(AgentStatusType.STATUS_IS_IT))) {
-                            //TODO not an IT-PLAYER
-                            boolean isIt = bfi.isItHere();
-                            try {
-                                if(isIt == false){
-                                    debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Found Bailiff-" +bfiRoom+" with "+activeAgents.size()+" agents, trying to MIGRATE");
-
-                                    ArrayList<Object> dex = bfi.migrate (this, "topLevel", new Object [] {agentID});
-                                    SDM.terminate ();
-                                    debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Migrated successfully to Bailiff-"+bfiRoom);
-                                    return;		// SUCCESS, break code execution
-                                }else if(isIt == true) {
-                                    svcItems[idx] = svcItems[nofItems - 1];
-                                    nofItems -= 1;
-                                    debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Avoided Migration to Bailiff-"+bfiRoom+ " IT-PLAYER present");
-                                    continue; // Leaves the current loop iteration and goes to next element(another BFF) in the list
-                                }
-
-                                debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Failed to Migrate to Bailiff-"+bfiRoom +"...trying another Bailiff");
-
-
-                            } catch (NoSuchMethodException e) {
-                                e.printStackTrace();
-                            }
 
                         }
-                    }else {
-                        debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Found empty Bailiff-"+bfiRoom +"...trying another Bailiff");
-                        continue;
+
                     }
                 }
 

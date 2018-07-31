@@ -188,7 +188,9 @@ public class Deedee implements Serializable {
 	  dgui.showPrepareJump ();
 	  try {
 	   // bfi.migrate (this, "topLevel", new Object [] {});
-          bfi.migrate (this, "topLevel", new Object [] {});
+          int code = 0;
+          String targetID = null;
+          bfi.migrate (this, "topLevel", new Object [] {}, code, targetID);
 	    dgui.showGone ();
 	    runFlop = false;
 	  }
