@@ -116,7 +116,7 @@ public class BailiffFrame extends JFrame
 //        add(applet);
 //
 //        // Show it.
-      setVisible (true);
+      //setVisible (true);
 //        applet.start();
     }
 
