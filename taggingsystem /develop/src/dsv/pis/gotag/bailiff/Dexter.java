@@ -64,6 +64,7 @@ public class Dexter implements Serializable
     protected ServiceTemplate bailiffTemplate;
     private int code;
 
+
     /**
      * Outputs a diagnostic message on standard output. This will be on
      * the host of the launching JVM before Dexter moves. Once he has migrated
@@ -140,6 +141,7 @@ public class Dexter implements Serializable
         Random rnd = new Random ();
         boolean agentLocationStaus;
         String targetID = null;
+        int numOfActiveAgents;
 
         // Create a Jini service discovery manager to help us interact with
         // the Jini lookup service.
@@ -247,17 +249,21 @@ public class Dexter implements Serializable
                     else {// This is the spot where Dexter tries to Tag or Migrate
                         if(getStatusType().equals(AgentStatusType.STATUS_IS_IT)){ //I am IT-PLAYER
                             int randomAgent = 0;
-                            randomAgent = rnd.nextInt(activeAgents.size());
+                            numOfActiveAgents = activeAgents.size();
+                            if(numOfActiveAgents==0)
+                                continue;
+
+                            randomAgent = rnd.nextInt(numOfActiveAgents);
                             targetID = (String) activeAgents.get(randomAgent);
                             if(((activeAgents.size() > 0)) && agentLocationStaus==true){ //THis Bailiff is my current location and has Agents
-                                debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Found Local Bailiff-"+bfiRoom+" with " +activeAgents.size()+" agents,Trying to Tag" );
+                                debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Found Local Bailiff-"+bfiRoom+" with " +numOfActiveAgents+" agents,Trying to Tag" );
                                bfi.tagAgent(this,agentID,targetID);
                                 debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Tagging-Attempt on Bailiff-"+bfiRoom +" finished, trying another Bailiff");
                                continue;
-                            }else if(((activeAgents.size() > 0)) && agentLocationStaus==false){ //This Bailiff has agents but not my current location
+                            }else if(((numOfActiveAgents > 0)) && agentLocationStaus==false){ //This Bailiff has agents but not my current location
                                 try {
                                     code = 1;
-                                    debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Found Remote Bailiff-"+bfiRoom+" with " +activeAgents.size()+" agents,Trying to Migrate" );
+                                    debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Found Remote Bailiff-"+bfiRoom+" with " +numOfActiveAgents+" agents,Trying to Migrate" );
                                     bfi.migrate (this, "topLevel", new Object [] {agentID}, code,targetID);
                                     debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Successfully Migrated to Bailiff-"+bfiRoom+" to TAG a victim");
                                     SDM.terminate ();
@@ -266,7 +272,7 @@ public class Dexter implements Serializable
                                     e.printStackTrace();
                                 }
                             }else{
-                                debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Failed to Migrate to Bailiff-"+bfiRoom +" NoofAgents= "+activeAgents.size()+" trying another Bailiff");
+                                debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Failed to Migrate to Bailiff-"+bfiRoom +" NoofAgents= "+numOfActiveAgents+" trying another Bailiff");
                                 continue;
 
                             }

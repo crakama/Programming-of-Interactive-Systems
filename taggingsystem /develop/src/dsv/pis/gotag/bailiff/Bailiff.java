@@ -56,11 +56,13 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
 
     //protected Map dexMap = Collections.synchronizedMap (new HashMap ());
 
-   protected Map<String,Dexter> agents = new HashMap<String,Dexter>();
-   //protected Map<String, Dexter>  agents= Collections.synchronizedMap(mp);
+    protected Map<String,Dexter> agents = new HashMap<String,Dexter>();
+    //protected Map<String, Dexter>  agents= Collections.synchronizedMap(mp);
     protected JoinManager bf_joinmanager;
     protected InetAddress myInetAddress;
     static JFrame bff;
+    private boolean tag = false;
+
     protected void debugMsg (String s) {
         if (debug) {
             System.out.println (s);
@@ -144,8 +146,8 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
         protected java.lang.reflect.Method myMethod; // Ref. to entry point method
         protected Class [] myParms; // Class reflection of arguments
         protected BailiffFrame bailiffFrame;
-
-        protected String agentID;
+        protected String targetID;
+        protected String selfID;
         protected DexterFace dexFace;
         private String count;
 
@@ -165,7 +167,29 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
             myObj = obj;
             myCb = cb;
             myArgs = args;
-            agentID = args[0].toString();
+            selfID= (String) args[0];
+
+            // If the array of arguments are non-zero we must create an array
+            // of Class so that we can match the entry point method's name with
+            // the parameter signature. So, the myParms[] array is loaded with
+            // the class of each entry point parameter.
+
+            if (0 < args.length) {
+                myParms = new Class [args.length];
+                for (int i = 0; i < args.length; i++) {
+                    myParms[i] = args[i].getClass ();
+                }
+            }
+            else { myParms = null; }
+        }
+
+        public agitator(Object obj, String cb, Object[] args, String sID, String tID) {
+
+            myObj = obj;
+            myCb = cb;
+            myArgs = args;
+            selfID = sID;
+            targetID = tID;
 
             // If the array of arguments are non-zero we must create an array
             // of Class so that we can match the entry point method's name with
@@ -203,7 +227,7 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
             try {
 
                 synchronized (agents) {
-                    while (agents.containsKey(agentID)) {
+                    while (agents.containsKey(selfID)) {
                         try {
                             agents.wait();
                         } catch (Exception e) {
@@ -211,11 +235,17 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
                                 e.printStackTrace();
                         }
                     }
-                    agents.put(agentID,dex);
+                    agents.put(selfID,dex);
+                }
+                if(tag){
+                    debugMsg(" TagGame: " + selfID +" : Status: "+dex.getStatusType()+"    Looking for Target in: "+getRoom());
+                    tagAgent(myObj,selfID,targetID);
+
                 }
 
+
+                debugMsg(" TagGame: " + selfID +" : Status: "+dex.getStatusType()+"    Arrived in: "+getRoom());
                 if(myArgs.length > 0){
-                    debugMsg(" TagGame: " + agentID +" : Status: "+dex.getStatusType()+"    Arrived in: "+getRoom());
                     myMethod.invoke (myObj, myArgs); }
             }
             catch (Throwable t) {
@@ -224,8 +254,9 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
                 }
             }finally {
                 synchronized (agents) {
-                    agents.remove(agentID);
-                    debugMsg(" TagGame: " + agentID +" : Status: "+dex.getStatusType()+"    Removed from: "+getRoom());
+                    agents.remove(selfID);
+                    debugMsg(" TagGame: " + selfID +" : Status: "+dex.getStatusType()+"    Removed from: "+getRoom());
+                    tag=false;
                     agents.notifyAll();
                 }
 
@@ -268,7 +299,7 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
         return ("Ping echo from Bailiff of Room: " + " [" + room+ "] " + " user=" + user + ".");
     }
 
-//    public String ping () throws java.rmi.RemoteException
+    //    public String ping () throws java.rmi.RemoteException
 //    {
 //        if (debug) {
 //            log.entry ("<ping/>");
@@ -350,9 +381,10 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
             agt.initialize ();
             agt.start ();
         }else {
+            tag = true;
             String selfID = (String) args[0];
-            tagAgent(obj,selfID,targetID);
-            agitator agt = new agitator (obj, cb,args);
+            //tagAgent(obj,selfID,targetID);
+            agitator agt = new agitator (obj, cb,args,selfID,targetID);
             agt.initialize ();
             agt.start ();
 
@@ -389,35 +421,35 @@ public class Bailiff extends java.rmi.server.UnicastRemoteObject implements dsv.
     @Override
     public void tagAgent(Object obj, String selfID, String victimID)throws RemoteException {
         int numberofAgents = getNumberofAgents();
-        Dexter self = (Dexter) obj;
         //if(numberofAgents > 0){
-            synchronized (agents){
-                if(agents.size() > 0){
-                    if(!victimID.equalsIgnoreCase(selfID)) { //Don't TAG yourself
-                        Dexter dexTarget = agents.get(victimID);
-                        if(!(dexTarget ==null) && (dexTarget.getStatusType()== AgentStatusType.STATUS_TAGGABLE)){
-                            debugMsg(" TagGame: " + selfID+" : Status: "+self.getStatusType()+"    TAGGING A TARGET ...in "+getRoom());
-                            dexTarget.setStatusType(AgentStatusType.STATUS_IS_IT);
-                            if(dexTarget.getStatusType()== AgentStatusType.STATUS_IS_IT){
-                                debugMsg(" TagGame: " + victimID+" : Status: "+dexTarget.getStatusType()+"    is an IT-PLAYER!!!");
-                                self.setStatusType(AgentStatusType.STATUS_TAGGABLE);
-                                debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Successfully Tagged another Agent");
-                            }
-                        }else if(dexTarget == null){
-                            debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Failed to Tag, Victim not found in "+getRoom());
-                        }else {
-                            debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Failed to Tag, victim has status "+dexTarget.getStatusType());
+        synchronized (agents){
+            Dexter self = (Dexter) agents.get(selfID);
+            if(agents.size() > 0){
+                if(!victimID.equalsIgnoreCase(selfID)) { //Don't TAG yourself
+                    Dexter dexTarget = agents.get(victimID);
+                    if((!(dexTarget ==null)) && (dexTarget.getStatusType()== AgentStatusType.STATUS_TAGGABLE)){
+                        debugMsg(" TagGame: " + selfID+" : Status: "+self.getStatusType()+"    TAGGING A TARGET IS IN PROGRESS... ");
+                        dexTarget.setStatusType(AgentStatusType.STATUS_IS_IT);
+                        if(dexTarget.getStatusType()== AgentStatusType.STATUS_IS_IT){
+                            debugMsg(" TagGame: " + victimID+" : Status: "+dexTarget.getStatusType()+"    is an IT-PLAYER!!!");
+                            self.setStatusType(AgentStatusType.STATUS_TAGGABLE);
+                            debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Successfully Tagged another Agent");
                         }
+                    }else if(dexTarget == null){
+                        debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Failed to Tag, Victim not found in "+getRoom());
                     }else {
-                        debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Failed to Tag, SELF-TAG not allowed");
-                        agents.notifyAll();
+                        debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Failed to Tag, victim "+victimID+" has status "+dexTarget.getStatusType());
                     }
-                    }else {
-                    debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Failed to Tag, Number of active Agents= "+numberofAgents);
+                }else {
+                    debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Failed to Tag, SELF-TAG not allowed");
                     agents.notifyAll();
                 }
+            }else {
+                debugMsg(" TagGame: " + selfID +" : Status: "+self.getStatusType()+"    Failed to Tag, Number of active Agents= "+numberofAgents);
+                agents.notifyAll();
+            }
 
-                }
+        }
 
     }
 
