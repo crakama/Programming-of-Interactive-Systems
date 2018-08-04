@@ -32,7 +32,7 @@ public interface ChatServerInterface
    */
   public String getName () throws java.rmi.RemoteException;
 
-  public List listofActiveUsers () throws java.rmi.RemoteException;
+  public List<String> listofActiveUsers () throws java.rmi.RemoteException;
 
   /**
    * Used by ChatClient instances to register themselves as receivers of

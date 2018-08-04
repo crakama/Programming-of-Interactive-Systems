@@ -15,6 +15,7 @@ import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Vector;
 
 // Jini
@@ -364,8 +365,25 @@ public class ChatClient
       catch (java.rmi.RemoteException rex) {
 	System.out.println ("[Sending to server failed]");
       }
-    }
-  }
+    }}
+
+
+    public void listClients(){
+        if (myServer != null) {
+            StringBuilder builder = new StringBuilder();
+            try {
+              List<String> activeClients =  myServer.listofActiveUsers();
+                for (String client : activeClients) {
+                    builder.append(client).append("\n");
+                }
+                // Display results.
+                String result = builder.toString();
+                System.out.println("\nList of Users Currently in the ChatGroup\n"+result);
+            }
+            catch (java.rmi.RemoteException rex) {
+                System.out.println ("[Querying Server Failed, Server instance is Null]");
+            }
+    }}
 
   /**
    * This method implements the '.list' and '.purge' user commands.
@@ -564,7 +582,10 @@ public class ChatClient
 	}
 
     else if ("listclients".startsWith (verb)) {
-        listServers (false);
+        listClients ();
+    }
+    else if ("text".startsWith (verb)) {
+        sendToChat(myName + ": "+stringJoin (argv, 1, " "));
     }
 	else if ("purge".startsWith (verb)) {
 	  listServers (true);
@@ -603,7 +624,8 @@ public class ChatClient
 
   }
 
-  // The main method.
+
+    // The main method.
 
   public static void main (String [] argv) throws java.io.IOException, java.lang.ClassNotFoundException, java.rmi.RemoteException {
     System.setSecurityManager (new RMISecurityManager ());

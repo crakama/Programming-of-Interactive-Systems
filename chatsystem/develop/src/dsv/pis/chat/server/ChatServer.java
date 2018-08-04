@@ -178,8 +178,6 @@ public class ChatServer extends java.rmi.server.UnicastRemoteObject	// for Java 
       sendReply(note);
   }
   protected void sendReply(ChatNotification note){
-      // Send it to all registered listeners.
-      //synchronized (clients){
       for (Object element : activeclients.keySet()) {
           try {
               RemoteEventListener rel = (RemoteEventListener) element;
@@ -190,8 +188,6 @@ public class ChatServer extends java.rmi.server.UnicastRemoteObject	// for Java 
           catch (net.jini.core.event.UnknownEventException uee) {}
           catch (java.rmi.RemoteException rex) {}
       }
-        //  wakeUp();
-     // }
 
   }
   /**
@@ -213,18 +209,6 @@ public class ChatServer extends java.rmi.server.UnicastRemoteObject	// for Java 
               iterator.remove();
           }
       }
-//      for (Object element : activeclients.keySet()) {
-//          RemoteEventListener rel = (RemoteEventListener) element;
-//          if ((rel instanceof RemoteEventListener && ( rel.equals(chatClient)))) {
-//              System.out.println ("Removed client : " + activeclients.get(chatClient));
-//              //TODO Enable all clients connected to the service to see whenever a client joins or leaves the chat.
-//              String msg = "Server Response: "+ chatClient+" Left the Chat Group";
-//              ChatNotification note = new ChatNotification (this, msg, msgCount);
-//              sendReply(note);
-//              activeclients.remove (chatClient);
-//          }
-//
-//      }
 
   }
 
@@ -244,7 +228,7 @@ public class ChatServer extends java.rmi.server.UnicastRemoteObject	// for Java 
   }
 
     @Override
-    public List listofActiveUsers() throws RemoteException {
+    public List<String> listofActiveUsers() throws RemoteException {
 
         return getActiveUsers();
     }
