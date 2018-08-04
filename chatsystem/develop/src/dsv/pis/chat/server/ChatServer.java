@@ -18,11 +18,12 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.rmi.RMISecurityManager;
-import java.util.LinkedList;
-import java.util.Vector;
+import java.rmi.RemoteException;
+import java.util.*;
 
 // Jini
 
+import dsv.pis.chat.client.ChatClient;
 import net.jini.core.entry.*;
 import net.jini.core.event.*;
 import net.jini.core.lookup.*;
@@ -54,7 +55,9 @@ public class ChatServer extends java.rmi.server.UnicastRemoteObject	// for Java 
    * The notification objects of registered clients are held in this
    * vector.
    */
-  protected Vector clients = new Vector ();
+ // protected Vector clients = new Vector ();
+
+  protected Map<RemoteEventListener,String> activeclients = new HashMap<>();
 
   /**
    * The printed name of this server instance.
@@ -163,22 +166,66 @@ public class ChatServer extends java.rmi.server.UnicastRemoteObject	// for Java 
    * Adds a registration to the list of clients currently connected to
    * this ChatServer instance. This method is synchronized to prevent
    * simultaneous update of the client list.
-   * @param rel  The RemoteEventListener implementation to add.
+   * @param chatClient  The RemoteEventListener implementation to add.
+   * @param clientName Name of connected Client
    */
-  protected synchronized void addClient (RemoteEventListener rel) {
-    clients.add (rel);
-    System.out.println ("Added client : " + rel.toString ());
+  protected synchronized void addClient(RemoteEventListener chatClient, String clientName) throws RemoteException {
+      activeclients.put(chatClient,clientName);
+    System.out.println ("Added client : " + clientName);
+    //TODO Enable all clients connected to the service to see whenever a client joins or leaves the chat.
+              String msg = clientName+" Joined the Chat Group";
+      ChatNotification note = new ChatNotification (this, msg, msgCount);
+      sendReply(note);
   }
+  protected void sendReply(ChatNotification note){
+      // Send it to all registered listeners.
+      //synchronized (clients){
+      for (Object element : activeclients.keySet()) {
+          try {
+              RemoteEventListener rel = (RemoteEventListener) element;
 
+              rel.notify (note);
+          }
+          catch (java.lang.ArrayIndexOutOfBoundsException aio) {}
+          catch (net.jini.core.event.UnknownEventException uee) {}
+          catch (java.rmi.RemoteException rex) {}
+      }
+        //  wakeUp();
+     // }
+
+  }
   /**
    * Removes a registration from the list of clients currently connected to
    * this ChatServer instance. This method is synchronized to prevent
    * simultaneous update of the client list.
-   * @param rel  The RemoteEventListener implementation to remove.
+   * @param chatClient  The RemoteEventListener implementation to remove.
    */
-  protected synchronized void removeClient (RemoteEventListener rel) {
-    clients.remove (rel);
-    System.out.println ("Removed client : " + rel.toString ());
+  protected synchronized void removeClient (RemoteEventListener chatClient) throws RemoteException {
+      for (Iterator<RemoteEventListener> iterator = activeclients.keySet().iterator(); iterator.hasNext();) {
+          RemoteEventListener eventListener = iterator.next();
+          if (eventListener.equals(chatClient)) {
+              // Remove the current element from the iterator and the list.
+              System.out.println ("Removed client : " + activeclients.get(chatClient));
+             //TODO Enable all clients connected to the service to see whenever a client joins or leaves the chat.
+              String msg =  activeclients.get(chatClient)+" Left the Chat Group";
+              ChatNotification note = new ChatNotification (this, msg, msgCount);
+              sendReply(note);
+              iterator.remove();
+          }
+      }
+//      for (Object element : activeclients.keySet()) {
+//          RemoteEventListener rel = (RemoteEventListener) element;
+//          if ((rel instanceof RemoteEventListener && ( rel.equals(chatClient)))) {
+//              System.out.println ("Removed client : " + activeclients.get(chatClient));
+//              //TODO Enable all clients connected to the service to see whenever a client joins or leaves the chat.
+//              String msg = "Server Response: "+ chatClient+" Left the Chat Group";
+//              ChatNotification note = new ChatNotification (this, msg, msgCount);
+//              sendReply(note);
+//              activeclients.remove (chatClient);
+//          }
+//
+//      }
+
   }
 
   // In interface ChatServerInterface
@@ -196,13 +243,33 @@ public class ChatServer extends java.rmi.server.UnicastRemoteObject	// for Java 
     return serverName;
   }
 
-  // In interface ChatServerInterface
+    @Override
+    public List listofActiveUsers() throws RemoteException {
 
-  public void register (RemoteEventListener rel)
-    throws java.rmi.RemoteException
-  {
+        return getActiveUsers();
+    }
+
+    private synchronized List<String> getActiveUsers() throws RemoteException {
+        List activeUsers = new ArrayList();
+
+        for (Object element : activeclients.keySet()) {
+            if(element instanceof RemoteEventListener){
+                RemoteEventListener chatClient = (RemoteEventListener) element;
+                activeUsers.add(activeclients.get(chatClient));
+            }else {
+                System.out.println(" Element Not Instance of RemoteEventListener!!! ");
+            }
+        }
+
+        return activeUsers;
+    }
+
+    // In interface ChatServerInterface
+
+  public void register(RemoteEventListener rel, String client) throws java.rmi.RemoteException {
     if (rel != null) {
-      addClient (rel);
+        String clientName = client;
+      addClient (rel,clientName);
     }
   }
 
@@ -257,16 +324,17 @@ public class ChatServer extends java.rmi.server.UnicastRemoteObject	// for Java 
 	// Prepare a notification
 	ChatNotification note = new ChatNotification (this, msg, msgCount);
 	// Send it to all registered listeners.
-	for (int i = 0; i < clients.size (); i++) {
-	  try {
-	    RemoteEventListener rel =
-	      (RemoteEventListener) clients.elementAt (i);
-	    rel.notify (note);
-	  }
-	  catch (java.lang.ArrayIndexOutOfBoundsException aio) {}
-	  catch (net.jini.core.event.UnknownEventException uee) {}
-	  catch (java.rmi.RemoteException rex) {}
-	}
+          sendReply(note);
+//	for (int i = 0; i < clients.size (); i++) {
+//	  try {
+//	    RemoteEventListener rel =
+//	      (RemoteEventListener) clients.elementAt (i);
+//	    rel.notify (note);
+//	  }
+//	  catch (java.lang.ArrayIndexOutOfBoundsException aio) {}
+//	  catch (net.jini.core.event.UnknownEventException uee) {}
+//	  catch (java.rmi.RemoteException rex) {}
+//	}
       }
       else {
 	snooze ();

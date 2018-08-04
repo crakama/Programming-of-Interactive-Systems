@@ -12,6 +12,7 @@ package dsv.pis.chat.client;
 import java.io.*;
 import java.lang.*;
 import java.rmi.*;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -35,8 +36,7 @@ import dsv.pis.chat.server.ChatNotification;
 public class ChatClient
   extends
     java.rmi.server.UnicastRemoteObject	// Since we accept remote calls
-  implements
-    ServiceDiscoveryListener,	// So we can receive service notifications
+  implements ServiceDiscoveryListener,	// So we can receive service notifications
     RemoteEventListener		// So we can receive chat notifications
 {
   /**
@@ -218,7 +218,7 @@ public class ChatClient
       myServer = null;
     }
     else {
-      System.out.println ("[Client is not currently connected]");
+      System.out.println ("[Attempting to Disconnect a user who is Not Connected]");
     }
   }
 
@@ -296,7 +296,7 @@ public class ChatClient
 	  System.out.flush ();
 
 	  try {
-	    server.register (this);
+	    server.register (this,myName);
 	    newServer = server;
 	    System.out.println ("ok]");
 	  }
@@ -559,9 +559,13 @@ public class ChatClient
 	else if ("disconnect".startsWith (verb)) {
 	  userDisconnect ();
 	}
-	else if ("list".startsWith (verb)) {
+	else if ("listservers".startsWith (verb)) {
 	  listServers (false);
 	}
+
+    else if ("listclients".startsWith (verb)) {
+        listServers (false);
+    }
 	else if ("purge".startsWith (verb)) {
 	  listServers (true);
 	}
@@ -596,22 +600,40 @@ public class ChatClient
     // Shut down the service discovery manager.
 
     sdm.terminate ();
+
   }
 
   // The main method.
 
-  public static void main (String [] argv)
-    throws
-      java.io.IOException,
-      java.lang.ClassNotFoundException,
-      java.rmi.RemoteException
-  {
+  public static void main (String [] argv) throws java.io.IOException, java.lang.ClassNotFoundException, java.rmi.RemoteException {
     System.setSecurityManager (new RMISecurityManager ());
 
     // System.out.println(System.getProperty("java.rmi.server.codebase"));
 
     ChatClient cc = new ChatClient ();
     cc.readLoop ();
+
   }
+
+    /**
+     * Passed to server through call by reference, client's callback object
+     * The ONLY class that server can access by calling ClientInterface
+     */
+    public class ClientStub extends UnicastRemoteObject implements ChatClientInterface {
+
+        public ClientStub() throws RemoteException {
+            //U.R.O Handles exporting operations
+
+        }
+
+        @Override
+        public String getClientName() throws RemoteException {
+            return myName;
+        }
+    }
+//    @Override
+//    public String getClientName() throws RemoteException {
+//        return myName;
+//    }
 }
 

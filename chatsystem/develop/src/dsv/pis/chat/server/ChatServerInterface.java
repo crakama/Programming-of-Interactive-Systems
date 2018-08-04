@@ -6,7 +6,7 @@
 
 package dsv.pis.chat.server;
 
-import java.rmi.*;
+import java.util.List;
 
 import net.jini.core.event.RemoteEventListener;
 
@@ -32,13 +32,16 @@ public interface ChatServerInterface
    */
   public String getName () throws java.rmi.RemoteException;
 
+  public List listofActiveUsers () throws java.rmi.RemoteException;
+
   /**
    * Used by ChatClient instances to register themselves as receivers of
    * remote notifications.
    * @param rel An object that implements net.jini.core.event.RemoteEvent
    *            interface.
+   * @param client
    */
-  public void register (RemoteEventListener rel)
+  public void register(RemoteEventListener rel, String client)
     throws java.rmi.RemoteException;
 
   /**
