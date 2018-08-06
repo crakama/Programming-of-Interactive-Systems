@@ -280,10 +280,17 @@ public class Dexter implements Serializable
                             try {
                                 code=0;
                                 debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Trying to Migrate to Bailiff-"+bfiRoom);
-                                bfi.migrate (this, "topLevel", new Object [] {agentID}, code,targetID);
-                                debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Successfully Migrated to Bailiff-"+bfiRoom);
-                                SDM.terminate ();
-                                return;// SUCCESS, break code execution
+                                boolean isitHere = bfi.isItHere();
+                                if(isitHere){
+                                    debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Avoided Migration to Bailiff-"+bfiRoom +" IT-PLAYER PRESENT!!!");
+                                    continue;
+                                }else {
+                                    bfi.migrate (this, "topLevel", new Object [] {agentID}, code,targetID);
+                                    debugMsg(" TagGame: " + agentID +" : Status: "+getStatusType()+"    Successfully Migrated to Bailiff-"+bfiRoom);
+                                    SDM.terminate ();
+                                    return;// SUCCESS, break code execution
+                                }
+
                             } catch (NoSuchMethodException e) {
                                 e.printStackTrace();
                             }

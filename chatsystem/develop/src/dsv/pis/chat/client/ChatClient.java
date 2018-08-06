@@ -637,25 +637,5 @@ public class ChatClient
 
   }
 
-    /**
-     * Passed to server through call by reference, client's callback object
-     * The ONLY class that server can access by calling ClientInterface
-     */
-    public class ClientStub extends UnicastRemoteObject implements ChatClientInterface {
-
-        public ClientStub() throws RemoteException {
-            //U.R.O Handles exporting operations
-
-        }
-
-        @Override
-        public String getClientName() throws RemoteException {
-            return myName;
-        }
-    }
-//    @Override
-//    public String getClientName() throws RemoteException {
-//        return myName;
-//    }
 }
 
